@@ -2,7 +2,7 @@
 {
   "name": "hypnotic-illusion",
   "version": "0.1.0",
-  "homepage": "https://YOUR_GITHUB_USERNAME.github.io/HypnoticIllusion",
+  "homepage": "https://kwestionmark-god.github.io/HypnoticIllusion",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
@@ -43,9 +43,5 @@
   "devDependencies": {
     "gh-pages": "^6.0.0",
     "tailwindcss": "^3.3.0"
-    },
-    "devDependencies": {
-      "gh-pages": "^6.0.0",
-      "tailwindcss": "^3.3.0"
-    }
+  }
   }
