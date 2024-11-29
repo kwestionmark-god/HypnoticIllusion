@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/HypnoticIllusion/static/css/main.da5465d7.css",
-    "main.js": "/HypnoticIllusion/static/js/main.908a9f52.js",
+    "main.css": "/HypnoticIllusion/static/css/main.6c10af26.css",
+    "main.js": "/HypnoticIllusion/static/js/main.650d1113.js",
     "static/js/453.547125d4.chunk.js": "/HypnoticIllusion/static/js/453.547125d4.chunk.js",
     "index.html": "/HypnoticIllusion/index.html",
-    "main.da5465d7.css.map": "/HypnoticIllusion/static/css/main.da5465d7.css.map",
-    "main.908a9f52.js.map": "/HypnoticIllusion/static/js/main.908a9f52.js.map",
+    "main.6c10af26.css.map": "/HypnoticIllusion/static/css/main.6c10af26.css.map",
+    "main.650d1113.js.map": "/HypnoticIllusion/static/js/main.650d1113.js.map",
     "453.547125d4.chunk.js.map": "/HypnoticIllusion/static/js/453.547125d4.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.da5465d7.css",
-    "static/js/main.908a9f52.js"
+    "static/css/main.6c10af26.css",
+    "static/js/main.650d1113.js"
   ]
 }
