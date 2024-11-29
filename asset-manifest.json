@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/hypnotic-illusion/static/css/main.fc5d9cb2.css",
+    "main.js": "/hypnotic-illusion/static/js/main.49041cd1.js",
+    "static/js/453.547125d4.chunk.js": "/hypnotic-illusion/static/js/453.547125d4.chunk.js",
+    "index.html": "/hypnotic-illusion/index.html",
+    "main.fc5d9cb2.css.map": "/hypnotic-illusion/static/css/main.fc5d9cb2.css.map",
+    "main.49041cd1.js.map": "/hypnotic-illusion/static/js/main.49041cd1.js.map",
+    "453.547125d4.chunk.js.map": "/hypnotic-illusion/static/js/453.547125d4.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.fc5d9cb2.css",
+    "static/js/main.49041cd1.js"
+  ]
+}
