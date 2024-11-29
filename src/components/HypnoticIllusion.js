@@ -14,6 +14,38 @@ const HypnoticIllusion = () => {
     pulseSpeed: 2,
     patternDepth: 4,
   });
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+
+  const initAudio = async () => {
+    try {
+      const audioContext = new window.AudioContext();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      setAudioEnabled(true);
+    } catch (err) {
+      console.warn('Audio input not available:', err);
+    }
+  };
+
+  const audioDataRef = useRef(new Float32Array(0));
+
+  const getAudioData = () => {
+    if (!analyserRef.current) return audioDataRef.current;
+    if (audioDataRef.current.length !== analyserRef.current.frequencyBinCount) {
+      audioDataRef.current = new Float32Array(analyserRef.current.frequencyBinCount);
+    }
+    analyserRef.current.getFloatFrequencyData(audioDataRef.current);
+    return audioDataRef.current;
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -82,10 +114,11 @@ const HypnoticIllusion = () => {
       ctx.save();
       ctx.translate(canvas.width / 2, canvas.height / 2);
 
-      // Draw multiple nested pattern layers
+      // Draw multiple nested pattern layers with interpenetration
       for (let layer = 0; layer < settings.layerCount; layer++) {
         const scale = 1 - layer * 0.1;
-        const speed = (1 + layer * 0.5) * settings.baseSpeed;
+        // Reverse rotation direction for alternating layers
+        const speed = settings.baseSpeed * (layer % 2 === 0 ? 1 : -1); // Normalized speed
         
         ctx.save();
         ctx.rotate(time * speed);
@@ -96,7 +129,7 @@ const HypnoticIllusion = () => {
         points.forEach(point => {
           ctx.beginPath();
           ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${point.hue}, ${settings.colorIntensity}%, 50%, 0.5)`;
+          ctx.fillStyle = `hsla(${point.hue}, ${settings.colorIntensity}%, 50%, 0.8)`; // Increased opacity
           ctx.fill();
         });
 
@@ -143,6 +176,14 @@ const HypnoticIllusion = () => {
       ctx.fillStyle = vignetteGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      if (audioEnabled) {
+        const audioData = getAudioData();
+        // Use audioData to modify visualization parameters
+        const avgAudio = audioData.reduce((a, b) => a + b, 0) / audioData.length;
+        settings.pulseSpeed = Math.max(0.5, Math.min(5, avgAudio * 0.1));
+        settings.colorIntensity = Math.max(50, Math.min(100, avgAudio * 2));
+      }
+
       if (isPlaying) {
         animationFrameId = requestAnimationFrame(draw);
       }
@@ -154,8 +195,11 @@ const HypnoticIllusion = () => {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
-  }, [isPlaying, time, settings]);
+  }, [isPlaying, time, settings, audioEnabled]);
 
   const toggleAnimation = () => {
     setIsPlaying(!isPlaying);
@@ -219,6 +263,14 @@ const HypnoticIllusion = () => {
         </div>
       )}
       
+      <button
+        onClick={initAudio}
+        disabled={audioEnabled}
+        className="p-2 bg-gray-800 bg-opacity-50 rounded-full"
+      >
+        Enable Audio Reactive
+      </button>
+
       <p className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-lg">
         Warning: This animation contains complex moving patterns that may cause discomfort for some viewers. 
         Use the controls to adjust the intensity and complexity to your comfort level.
