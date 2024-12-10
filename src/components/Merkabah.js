@@ -1,223 +1,233 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 const MerkabaMeditation = () => {
   const containerRef = useRef();
-  const animationFrameRef = useRef();
+
+  // Refs for scene elements
+  const sceneRef = useRef(null);
+  const cameraRef = useRef(null);
+  const rendererRef = useRef(null);
+  const merkabaGroupRef = useRef(null);
+  const controlsRef = useRef(null);
+  const animationFrameRef = useRef(null);
+
   const [settings, setSettings] = useState({
-    rotationSpeed: 0.005, // Reduced initial rotation speed
-    color: '#00ffff',
+    rotationSpeed: 0.005,
     backgroundColor: '#000000',
-    size: 3, // Reduced initial size
-    wireframe: true,
+    solidPolygonColor: '#ff0000',
+    wireframeColor: '#ffffff',
+    sphereColor: '#00ff00',
+    size: 3,
     showGrid: false,
-    showSolidPolygons: false, // New setting for solid polygons
-    solidPolygonColor: '#ff0000', // New setting for solid polygon color
-    wireframeColor: '#ffffff', // New setting for wireframe color
-    sphereColor: '#00ff00', // New setting for sphere color
+    showSolidPolygons: false,
   });
   const [isPlaying, setIsPlaying] = useState(true);
   const [showControls, setShowControls] = useState(true);
 
-  useEffect(() => {
-    let scene, camera, renderer, merkabaGroup, controls;
-    const currentContainer = containerRef.current; // Store ref in variable for cleanup
+  const initScene = useCallback(() => {
+    const container = containerRef.current;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
 
-    const init = () => {
-      // Scene setup
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(settings.backgroundColor);
+    // Scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(settings.backgroundColor);
+    sceneRef.current = scene;
 
-      // Camera setup
-      const width = containerRef.current.clientWidth;
-      const height = containerRef.current.clientHeight;
-      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-      camera.position.set(0, 0, settings.size * 6);
+    // Camera
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(0, 0, settings.size * 6);
+    cameraRef.current = camera;
 
-      // Renderer setup
-      renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(width, height);
-      containerRef.current.appendChild(renderer.domElement);
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(width, height);
+    container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
-      // Controls setup
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controlsRef.current = controls;
 
-      // Lights setup
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      scene.add(ambientLight);
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
 
-      const pointLight = new THREE.PointLight(0xffffff, 1);
-      pointLight.position.set(10, 10, 10);
-      scene.add(pointLight);
+    const pointLight = new THREE.PointLight(0xffffff, 1);
+    pointLight.position.set(10, 10, 10);
+    scene.add(pointLight);
 
-      // Create base geometry and material
-      const baseSize = 1; // Use a base size of 1 and scale later
-      const geometry = new THREE.TetrahedronGeometry(baseSize);
-      const wireframeMaterial = new THREE.LineBasicMaterial({
-        color: settings.wireframeColor, // Use wireframe color from settings
-      });
-      const solidMaterial = new THREE.MeshPhongMaterial({
-        color: settings.solidPolygonColor, // Use solid polygon color from settings
-        wireframe: false,
-        side: THREE.DoubleSide,
-      });
+    // Merkaba group
+    const merkabaGroup = new THREE.Group();
+    merkabaGroupRef.current = merkabaGroup;
+    scene.add(merkabaGroup);
 
-      // Create the Merkabah group
-      merkabaGroup = new THREE.Group();
+    // Optional: Grid
+    if (settings.showGrid) {
+      const gridHelper = new THREE.GridHelper(200, 50);
+      scene.add(gridHelper);
+    }
 
-      // First tetrahedron (pointing up)
-      const tetrahedronUp = new THREE.Mesh(geometry, solidMaterial);
-      tetrahedronUp.rotation.x = Math.PI / 2; // Adjust rotation to point up
-      tetrahedronUp.scale.setScalar(settings.size); // Scale based on settings
-      tetrahedronUp.position.y = baseSize * settings.size / Math.sqrt(30000); // Adjust position
-
-      // Second tetrahedron (pointing down)
-      const tetrahedronDown = new THREE.Mesh(geometry, solidMaterial);
-      tetrahedronDown.rotation.x = -Math.PI / 1; // Adjust rotation to point down
-      tetrahedronDown.rotation.y = Math.PI; // Fully reverse orientation
-      tetrahedronDown.scale.setScalar(settings.size); // Scale based on settings
-      tetrahedronDown.position.y = -baseSize * settings.size / Math.sqrt(30000); // Adjust position
-
-      // Add both tetrahedrons to the group
-      merkabaGroup.add(tetrahedronUp);
-      merkabaGroup.add(tetrahedronDown);
-
-      // Add wireframe for intersecting edges
-      const wireframeGeometry = new THREE.EdgesGeometry(geometry);
-      const wireframeUp = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
-      wireframeUp.rotation.x = Math.PI / 2;
-      wireframeUp.scale.setScalar(settings.size);
-      wireframeUp.position.y = baseSize * settings.size / Math.sqrt(30000);
-
-      const wireframeDown = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
-      wireframeDown.rotation.x = -Math.PI / 1;
-      wireframeDown.rotation.y = Math.PI;
-      wireframeDown.scale.setScalar(settings.size);
-      wireframeDown.position.y = -baseSize * settings.size / Math.sqrt(30000);
-
-      merkabaGroup.add(wireframeUp);
-      merkabaGroup.add(wireframeDown);
-
-      // Add small spheres at each vertex
-      const vertexGeometry = new THREE.SphereGeometry(0.1 * settings.size, 16, 16);
-      const vertexMaterial = new THREE.MeshBasicMaterial({ color: settings.sphereColor });
-
-      const vertices = [
-        new THREE.Vector3(1, 1, 1),
-        new THREE.Vector3(-1, -1, 1),
-        new THREE.Vector3(-1, 1, -1),
-        new THREE.Vector3(1, -1, -1),
-      ];
-
-      vertices.forEach(vertex => {
-        const vertexSphereUp = new THREE.Mesh(vertexGeometry, vertexMaterial);
-        vertexSphereUp.position.copy(vertex).multiplyScalar(settings.size / Math.sqrt(2));
-        merkabaGroup.add(vertexSphereUp);
-
-        const vertexSphereDown = new THREE.Mesh(vertexGeometry, vertexMaterial);
-        vertexSphereDown.position.copy(vertex).multiplyScalar(settings.size / Math.sqrt(2)).negate();
-        merkabaGroup.add(vertexSphereDown);
-      });
-
-      // Add wireframe for inner vertices
-      const wireframeGeometryInner = new THREE.BufferGeometry().setFromPoints(vertices.flatMap(vertex => [
-        vertex.clone().multiplyScalar(settings.size / Math.sqrt(2)),
-        vertex.clone().multiplyScalar(settings.size / Math.sqrt(2)).negate()
-      ]));
-      const wireframeInner = new THREE.LineSegments(wireframeGeometryInner, wireframeMaterial);
-      merkabaGroup.add(wireframeInner);
-
-      // Align merkaba to the grid
-      merkabaGroup.position.set(0, 0, 0); // Adjust as needed to align to the grid
-
-      // Add solid polygons if enabled
-      if (settings.showSolidPolygons) {
-        const solidTetrahedronUp = new THREE.Mesh(geometry, solidMaterial);
-        solidTetrahedronUp.rotation.x = Math.PI / 2;
-        solidTetrahedronUp.scale.setScalar(settings.size);
-        solidTetrahedronUp.position.y = baseSize * settings.size / Math.sqrt(25000);
-
-        const solidTetrahedronDown = new THREE.Mesh(geometry, solidMaterial);
-        solidTetrahedronDown.rotation.x = -Math.PI / 1;
-        solidTetrahedronDown.rotation.y = Math.PI;
-        solidTetrahedronDown.scale.setScalar(settings.size);
-        solidTetrahedronDown.position.y = -baseSize * settings.size / Math.sqrt(40000);
-
-        merkabaGroup.add(solidTetrahedronUp);
-        merkabaGroup.add(solidTetrahedronDown);
-
-        // Add wireframe on top of solid polygons
-        const wireframeTetrahedronUp = new THREE.Mesh(geometry, wireframeMaterial);
-        wireframeTetrahedronUp.rotation.x = Math.PI / 2;
-        wireframeTetrahedronUp.scale.setScalar(settings.size);
-        wireframeTetrahedronUp.position.y = baseSize * settings.size / Math.sqrt(40000);
-
-        const wireframeTetrahedronDown = new THREE.Mesh(geometry, wireframeMaterial);
-        wireframeTetrahedronDown.rotation.x = -Math.PI / 1;
-        wireframeTetrahedronDown.rotation.y = Math.PI;
-        wireframeTetrahedronDown.scale.setScalar(settings.size);
-        wireframeTetrahedronDown.position.y = -baseSize * settings.size / Math.sqrt(25000);
-
-        merkabaGroup.add(wireframeTetrahedronUp);
-        merkabaGroup.add(wireframeTetrahedronDown);
-      }
-
-      // Set initial sacred geometry orientation for the entire group
-      merkabaGroup.rotation.x = Math.PI / 6; // 30 degrees
-      merkabaGroup.rotation.y = Math.PI / 4; // 45 degrees
-
-      // Adjust camera position based on size
-      camera.position.z = settings.size * 5;
-
-      merkabaGroup.position.set(0, 0, 0); // Adjust as needed to align to the grid
-
-      scene.add(merkabaGroup);
-
-      // Grid Helper (optional)
-      if (settings.showGrid) {
-        const gridHelper = new THREE.GridHelper(200, 50);
-        scene.add(gridHelper);
-      }
-
-      // Handle window resize
-      window.addEventListener('resize', onWindowResize, false);
-    };
-
+    // Handle window resize
     const onWindowResize = () => {
-      const width = containerRef.current.clientWidth;
-      const height = containerRef.current.clientHeight;
-      camera.aspect = width / height;
+      const newWidth = container.clientWidth;
+      const newHeight = container.clientHeight;
+      camera.aspect = newWidth / newHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
+      renderer.setSize(newWidth, newHeight);
     };
+    window.addEventListener('resize', onWindowResize);
 
-    const animate = () => {
-      if (isPlaying) {
-        merkabaGroup.rotation.x += settings.rotationSpeed;
-        merkabaGroup.rotation.y += settings.rotationSpeed;
-      }
-
-      controls.update();
-      renderer.render(scene, camera);
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    init();
-    animate();
-
-    // Cleanup on unmount
-    return () => {
+    // Cleanup function
+    const cleanup = () => {
       cancelAnimationFrame(animationFrameRef.current);
       window.removeEventListener('resize', onWindowResize);
       controls.dispose();
       renderer.dispose();
-      if (currentContainer && renderer) {  // Check both exist
-        currentContainer.removeChild(renderer.domElement);
+      if (container && renderer.domElement) {
+        container.removeChild(renderer.domElement);
       }
     };
-  }, [settings, isPlaying]);
+
+    return { cleanup };
+  }, [settings.backgroundColor, settings.showGrid, settings.size]);
+
+  const createMerkabaGeometry = useCallback(() => {
+    const { solidPolygonColor, wireframeColor, sphereColor, size, showSolidPolygons } = settings;
+    const merkabaGroup = merkabaGroupRef.current;
+    if (!merkabaGroup) return;
+
+    // Clear existing children (if any)
+    while (merkabaGroup.children.length > 0) {
+      merkabaGroup.remove(merkabaGroup.children[0]);
+    }
+
+    // Base geometry and materials
+    const baseSize = 1;
+    const geometry = new THREE.TetrahedronGeometry(baseSize);
+
+    const solidMaterial = new THREE.MeshPhongMaterial({
+      color: solidPolygonColor,
+      wireframe: false,
+      side: THREE.DoubleSide,
+    });
+
+    const wireframeMaterial = new THREE.LineBasicMaterial({
+      color: wireframeColor,
+    });
+
+    // Tetrahedrons
+    const tetrahedronUp = new THREE.Mesh(geometry, solidMaterial);
+    tetrahedronUp.rotation.x = Math.PI / 2;
+    tetrahedronUp.scale.setScalar(size);
+    tetrahedronUp.position.y = (baseSize * size) / Math.sqrt(30000);
+
+    const tetrahedronDown = new THREE.Mesh(geometry, solidMaterial);
+    tetrahedronDown.rotation.x = -Math.PI;
+    tetrahedronDown.rotation.y = Math.PI;
+    tetrahedronDown.scale.setScalar(size);
+    tetrahedronDown.position.y = -(baseSize * size) / Math.sqrt(30000);
+
+    merkabaGroup.add(tetrahedronUp, tetrahedronDown);
+
+    // Wireframe edges
+    const wireframeGeometry = new THREE.EdgesGeometry(geometry);
+    const wireframeUp = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+    wireframeUp.rotation.x = Math.PI / 2;
+    wireframeUp.scale.setScalar(size);
+    wireframeUp.position.y = (baseSize * size) / Math.sqrt(30000);
+
+    const wireframeDown = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+    wireframeDown.rotation.x = -Math.PI;
+    wireframeDown.rotation.y = Math.PI;
+    wireframeDown.scale.setScalar(size);
+    wireframeDown.position.y = -(baseSize * size) / Math.sqrt(30000);
+
+    merkabaGroup.add(wireframeUp, wireframeDown);
+
+    // Vertex spheres
+    const vertexGeometry = new THREE.SphereGeometry(0.1 * size, 16, 16);
+    const vertexMaterial = new THREE.MeshBasicMaterial({ color: sphereColor });
+
+    const vertices = [
+      new THREE.Vector3(1, 1, 1),
+      new THREE.Vector3(-1, -1, 1),
+      new THREE.Vector3(-1, 1, -1),
+      new THREE.Vector3(1, -1, -1),
+    ];
+
+    vertices.forEach((vertex) => {
+      const vertexSphereUp = new THREE.Mesh(vertexGeometry, vertexMaterial);
+      vertexSphereUp.position.copy(vertex).multiplyScalar(size / Math.sqrt(2));
+      merkabaGroup.add(vertexSphereUp);
+
+      const vertexSphereDown = new THREE.Mesh(vertexGeometry, vertexMaterial);
+      vertexSphereDown.position
+        .copy(vertex)
+        .multiplyScalar(size / Math.sqrt(2))
+        .negate();
+      merkabaGroup.add(vertexSphereDown);
+    });
+
+    // Inner connecting wires
+    const innerVertices = vertices.flatMap((vertex) => [
+      vertex.clone().multiplyScalar(size / Math.sqrt(2)),
+      vertex.clone().multiplyScalar(size / Math.sqrt(2)).negate(),
+    ]);
+    const wireframeGeometryInner = new THREE.BufferGeometry().setFromPoints(innerVertices);
+    const wireframeInner = new THREE.LineSegments(wireframeGeometryInner, wireframeMaterial);
+    merkabaGroup.add(wireframeInner);
+
+    // Optional solid polygons (extra tetrahedrons)
+    if (showSolidPolygons) {
+      const solidTetraUp = new THREE.Mesh(geometry, solidMaterial);
+      solidTetraUp.rotation.x = Math.PI / 2;
+      solidTetraUp.scale.setScalar(size);
+      solidTetraUp.position.y = (baseSize * size) / Math.sqrt(25000);
+      merkabaGroup.add(solidTetraUp);
+
+      const solidTetraDown = new THREE.Mesh(geometry, solidMaterial);
+      solidTetraDown.rotation.x = -Math.PI;
+      solidTetraDown.rotation.y = Math.PI;
+      solidTetraDown.scale.setScalar(size);
+      solidTetraDown.position.y = -(baseSize * size) / Math.sqrt(40000);
+      merkabaGroup.add(solidTetraDown);
+    }
+
+    // Set initial orientation
+    merkabaGroup.rotation.x = Math.PI / 6;
+    merkabaGroup.rotation.y = Math.PI / 4;
+  }, [settings]);
+
+  useEffect(() => {
+    const { cleanup } = initScene();
+    createMerkabaGeometry();
+
+    const animate = () => {
+      if (isPlaying && merkabaGroupRef.current) {
+        merkabaGroupRef.current.rotation.x += settings.rotationSpeed;
+        merkabaGroupRef.current.rotation.y += settings.rotationSpeed;
+      }
+      if (controlsRef.current && rendererRef.current && sceneRef.current && cameraRef.current) {
+        controlsRef.current.update();
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      cleanup();
+    };
+  }, [initScene, createMerkabaGeometry, isPlaying, settings.rotationSpeed]);
+
+  // If settings (like colors) change, we just rebuild the geometry
+  useEffect(() => {
+    createMerkabaGeometry();
+  }, [settings, createMerkabaGeometry]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -228,24 +238,22 @@ const MerkabaMeditation = () => {
     }));
   };
 
-  // Add toggle functions
-  const toggleAnimation = () => setIsPlaying(prev => !prev);
-  const toggleControls = () => setShowControls(prev => !prev);
+  const toggleAnimation = () => setIsPlaying((prev) => !prev);
+  const toggleControls = () => setShowControls((prev) => !prev);
 
   return (
     <div style={{ position: 'relative' }}>
+      <div ref={containerRef} style={{ width: '100%', height: '100vh' }} />
       <div
-        ref={containerRef}
-        style={{ width: '100%', height: '100vh' }}
-      />
-      <div style={{
-        position: 'absolute',
-        top: 10,
-        right: 10,
-        display: 'flex',
-        gap: '10px',
-        zIndex: 10 // Ensure this is above other elements
-      }}>
+        style={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          display: 'flex',
+          gap: '10px',
+          zIndex: 10,
+        }}
+      >
         <button
           onClick={toggleAnimation}
           style={{
@@ -253,7 +261,7 @@ const MerkabaMeditation = () => {
             background: 'rgba(0,0,0,0.5)',
             color: 'white',
             border: 'none',
-            borderRadius: '5px'
+            borderRadius: '5px',
           }}
         >
           {isPlaying ? 'Pause' : 'Play'}
@@ -265,22 +273,24 @@ const MerkabaMeditation = () => {
             background: 'rgba(0,0,0,0.5)',
             color: 'white',
             border: 'none',
-            borderRadius: '5px'
+            borderRadius: '5px',
           }}
         >
           Settings
         </button>
       </div>
       {showControls && (
-        <div style={{
-          position: 'absolute',
-          top: 60, // Move it down to avoid overlapping with the back button
-          left: 10,
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          padding: '10px',
-          borderRadius: '5px',
-          zIndex: 10 // Ensure this is above other elements
-        }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: 60,
+            left: 10,
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            padding: '10px',
+            borderRadius: '5px',
+            zIndex: 10,
+          }}
+        >
           <div>
             <label>
               Rotation Speed:
@@ -324,6 +334,28 @@ const MerkabaMeditation = () => {
                 type="color"
                 name="sphereColor"
                 value={settings.sphereColor}
+                onChange={handleInputChange}
+              />
+            </label>
+          </div>
+          <div>
+            <label>
+              Show Solid Polygons:
+              <input
+                type="checkbox"
+                name="showSolidPolygons"
+                checked={settings.showSolidPolygons}
+                onChange={handleInputChange}
+              />
+            </label>
+          </div>
+          <div>
+            <label>
+              Show Grid:
+              <input
+                type="checkbox"
+                name="showGrid"
+                checked={settings.showGrid}
                 onChange={handleInputChange}
               />
             </label>
